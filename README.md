@@ -1,9 +1,8 @@
-
-# Setup
-
 # Introduction
 
 Just a simple little application to play around with Quartz.NET and SQL Server.
+
+# Setup
 
 > **Warning**
 > This project will be full of shortcuts and bad practices. It is not intended to be used in production. Just simply a playground for me to learn and experiment with.
