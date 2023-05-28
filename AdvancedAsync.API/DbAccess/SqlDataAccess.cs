@@ -1,8 +1,4 @@
-﻿using Dapper;
-using System.Data;
-using System.Data.SqlClient;
-
-namespace AdvancedAsync.API.DbAccess;
+﻿namespace AdvancedAsync.API.DbAccess;
 
 public class SqlDataAccess : ISqlDataAccess
 {

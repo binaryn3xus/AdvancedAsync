@@ -17,4 +17,12 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\joshu\source\repos\AdvancedAsync.API\AdvancedAsync.API\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\Users\joshu\source\repos\AdvancedAsync.API\AdvancedAsync.API\.editorconfig" />
+  </ItemGroup>
+
 </Project>
