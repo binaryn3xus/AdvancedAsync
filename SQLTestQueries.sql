@@ -17,6 +17,7 @@ SELECT TOP (1000) [Id]
     [StartTime],
     [EndTime],
     [Status],
+    [AdditionalData],
     CASE
         WHEN [EndTime] IS NULL THEN DATEDIFF(second, [StartTime], GETDATE())
         ELSE DATEDIFF(second, [StartTime], [EndTime])

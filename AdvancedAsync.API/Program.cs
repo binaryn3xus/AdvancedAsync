@@ -8,9 +8,9 @@ builder.Services.AddQuartz(q =>
 {
     q.UseMicrosoftDependencyInjectionJobFactory();
 
-    q.AddJob<ShortJob>(opts => opts.WithIdentity(new JobKey(ShortJob.Key)).StoreDurably(true));
-    q.AddJob<MediumJob>(opts => opts.WithIdentity(new JobKey(MediumJob.Key)).StoreDurably(true));
-    q.AddJob<LongJob>(opts => opts.WithIdentity(new JobKey(LongJob.Key)).StoreDurably(true));
+    //q.AddJob<ShortJob>(opts => opts.WithIdentity(new JobKey(ShortJob.Key)).StoreDurably(true));
+    q.AddJob<MediumJob>(opts => opts.WithIdentity(MediumJob.JobKey).StoreDurably(true));
+    q.AddJob<LongJob>(opts => opts.WithIdentity(LongJob.JobKey).StoreDurably(true));
 });
 builder.Services.AddQuartzHostedService(options =>
 {

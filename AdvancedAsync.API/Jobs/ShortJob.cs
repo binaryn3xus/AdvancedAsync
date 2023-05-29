@@ -3,7 +3,7 @@
 [DisallowConcurrentExecution]
 public class ShortJob : IJob
 {
-    public static string Key => "ShortRunningJob";
+    public static readonly JobKey JobKey = new("ShortRunningJob");
     private readonly ILogger<ShortJob> _logger;
     private readonly ISqlDataAccess _sqlDataAccess;
 
@@ -17,12 +17,18 @@ public class ShortJob : IJob
     {
         try
         {
-            await _sqlDataAccess.ExecuteAsync("ShortRunningProcedure", new { }, commandTimeout: 0, connectionId: "SqlServer");
-            _logger.LogInformation("Completed Job {Key}", Key);
+            var seconds = context.MergedJobDataMap.GetInt("Seconds");
+            _logger.LogInformation("Seconds: {Seconds}", seconds);
+
+            var sampleData = context.MergedJobDataMap.GetString("SampleData");
+            _logger.LogInformation("SampleData: {SampleData}", sampleData);
+
+            await _sqlDataAccess.ExecuteAsync("ShortRunningProcedure", new { Seconds = seconds, SampleData = sampleData }, commandTimeout: 0, connectionId: "SqlServer");
+            _logger.LogInformation("Completed Job {Key}", JobKey.Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing Job: {Key}", Key);
+            _logger.LogError(ex, "Error executing Job: {Key}", JobKey.Name);
         }
         return;
     }

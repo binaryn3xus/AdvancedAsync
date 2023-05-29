@@ -1,7 +1,4 @@
-﻿using AdvancedAsync.API.Jobs;
-using Quartz.Impl.Matchers;
-
-namespace AdvancedAsync.API.Endpoints;
+﻿namespace AdvancedAsync.API.Endpoints;
 
 public class SqlTestEndpoints : IEndpoints
 {
@@ -39,7 +36,8 @@ public class SqlTestEndpoints : IEndpoints
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
         var runningJobs = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
-        return Results.Ok(runningJobs.Select(x => new {
+        return Results.Ok(runningJobs.Select(x => new
+        {
             JobKeyName = x.JobDetail.Key.Name,
             ElapsedTime = DateTime.UtcNow - x.FireTimeUtc
         }));
@@ -48,23 +46,31 @@ public class SqlTestEndpoints : IEndpoints
     internal static async Task<IResult> ExecuteShortRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
-        await scheduler.TriggerJob(new JobKey(ShortJob.Key), cancellationToken);
+
+        var job = JobBuilder.Create<ShortJob>().WithIdentity(ShortJob.JobKey)
+            .UsingJobData("Seconds", 180)
+            .UsingJobData("SampleData", "MasterChief")
+            .Build();
+
+        var trigger = TriggerBuilder.Create().WithIdentity($"{ShortJob.JobKey.Name}-trigger", "Short").StartNow().Build();
+
+        await scheduler.ScheduleJob(job, trigger, cancellationToken);
+
+        //await scheduler.TriggerJob(ShortJob.JobKey, cancellationToken);
         return Results.Ok("Short Running Triggered");
     }
 
     internal static async Task<IResult> ExecuteMediumRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
-        await scheduler.TriggerJob(new JobKey(MediumJob.Key), cancellationToken);
-        //sqlDataAccess.ExecuteLongRunningProcedureAsync("MediumRunningProcedure", new { }, "TestUser", 0, "SqlServer");
+        await scheduler.TriggerJob(MediumJob.JobKey, cancellationToken);
         return Results.Ok("Medium Running Triggered");
     }
 
     internal static async Task<IResult> ExecuteLongRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
-        await scheduler.TriggerJob(new JobKey(LongJob.Key), cancellationToken);
-        //sqlDataAccess.ExecuteLongRunningProcedureAsync("LongRunningProcedure", new { }, "TestUser", 0, "SqlServer");
+        await scheduler.TriggerJob(LongJob.JobKey, cancellationToken);
         return Results.Ok("Long Running Triggered");
     }
 }

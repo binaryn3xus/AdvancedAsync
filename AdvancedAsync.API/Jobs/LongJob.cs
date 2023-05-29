@@ -3,7 +3,7 @@
 [DisallowConcurrentExecution]
 public class LongJob : IJob
 {
-    public static string Key => "LongRunningJob";
+    public static readonly JobKey JobKey = new("LongRunningJob");
     private readonly ILogger<LongJob> _logger;
     private readonly ISqlDataAccess _sqlDataAccess;
 
@@ -18,11 +18,11 @@ public class LongJob : IJob
         try
         {
             await _sqlDataAccess.ExecuteAsync("LongRunningProcedure", new { }, commandTimeout: 0, connectionId: "SqlServer");
-            _logger.LogInformation("Completed Job {Key}", Key);
+            _logger.LogInformation("Completed Job {Key}", JobKey.Name);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing Job: {Key}", Key);
+            _logger.LogError(ex, "Error executing Job: {Key}", JobKey.Name);
         }
         return;
     }
