@@ -50,7 +50,12 @@ public class SqlDataAccess : ISqlDataAccess
         try
         {
             using IDbConnection connection = new SqlConnection(_configuration.GetConnectionString(connectionId));
-            await connection.ExecuteAsync(storedProcedure, parameters, commandTimeout: commandTimeout, commandType: CommandType.StoredProcedure);
+            var cmdDefinition = new CommandDefinition(storedProcedure, parameters, commandTimeout: commandTimeout, commandType: CommandType.StoredProcedure, cancellationToken: cancellationToken);
+            await connection.ExecuteAsync(cmdDefinition);
+        }
+        catch (SqlException ex) when (cancellationToken.IsCancellationRequested && ex.Number == 0 && ex.State == 0 && ex.Class == 11)
+        {
+            throw new OperationCanceledException(cancellationToken);
         }
         catch (Exception ex)
         {

@@ -23,13 +23,17 @@ public class ShortJob : IJob
             var sampleData = context.MergedJobDataMap.GetString("SampleData");
             _logger.LogInformation("SampleData: {SampleData}", sampleData);
 
-            await _sqlDataAccess.ExecuteAsync("ShortRunningProcedure", new { Seconds = seconds, SampleData = sampleData }, commandTimeout: 0, connectionId: "SqlServer");
+            await _sqlDataAccess.ExecuteAsync("ShortRunningProcedure", new { Seconds = seconds, SampleData = sampleData }, commandTimeout: 0, connectionId: "SqlServer", cancellationToken: context.CancellationToken);
+
             _logger.LogInformation("Completed Job {Key}", JobKey.Name);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Job {Key} was canceled.", JobKey.Name);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing Job: {Key}", JobKey.Name);
         }
-        return;
     }
 }

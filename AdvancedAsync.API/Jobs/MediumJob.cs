@@ -17,13 +17,17 @@ public class MediumJob : IJob
     {
         try
         {
-            await _sqlDataAccess.ExecuteAsync("MediumRunningProcedure", new { }, commandTimeout: 0, connectionId: "SqlServer");
+            await _sqlDataAccess.ExecuteAsync("MediumRunningProcedure", new { }, commandTimeout: 0, connectionId: "SqlServer", cancellationToken: context.CancellationToken);
+
             _logger.LogInformation("Completed Job {Key}", JobKey.Name);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Job {Key} was canceled.", JobKey.Name);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing Job: {Key}", JobKey.Name);
         }
-        return;
     }
 }

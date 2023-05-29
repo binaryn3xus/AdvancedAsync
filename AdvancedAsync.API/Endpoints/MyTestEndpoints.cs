@@ -6,25 +6,12 @@ public class SqlTestEndpoints : IEndpoints
 
     public static void DefineEndpoints(IEndpointRouteBuilder app)
     {
-        app.MapGet("api/ping", Ping)
-            .WithName("Ping")
-            .WithOpenApi();
-
-        app.MapGet("api/jobs/running", GetRunningJobs)
-            .WithName("RunningJobs")
-            .WithOpenApi();
-
-        app.MapGet("api/short", ExecuteShortRunningProcedure)
-            .WithName("ExecuteShortRunningProcedure")
-            .WithOpenApi();
-
-        app.MapGet("api/medium", ExecuteMediumRunningProcedure)
-            .WithName("ExecuteMediumRunningProcedure")
-            .WithOpenApi();
-
-        app.MapGet("api/long", ExecuteLongRunningProcedure)
-            .WithName("ExecuteLongRunningProcedure")
-            .WithOpenApi();
+        app.MapGet("api/ping", Ping).WithName("Ping").WithOpenApi();
+        app.MapGet("api/jobs/running", GetRunningJobs).WithName("RunningJobs").WithOpenApi();
+        app.MapGet("api/short", ExecuteShortRunningProcedure).WithName("ExecuteShortRunningProcedure").WithOpenApi();
+        app.MapGet("api/short/stop", StopShortRunningProcedure).WithName("CancelShortRunningProcedure").WithOpenApi();
+        app.MapGet("api/medium", ExecuteMediumRunningProcedure).WithName("ExecuteMediumRunningProcedure").WithOpenApi();
+        app.MapGet("api/long", ExecuteLongRunningProcedure).WithName("ExecuteLongRunningProcedure").WithOpenApi();
     }
 
     internal static IResult Ping(CancellationToken cancellationToken = default)
@@ -39,7 +26,8 @@ public class SqlTestEndpoints : IEndpoints
         return Results.Ok(runningJobs.Select(x => new
         {
             JobKeyName = x.JobDetail.Key.Name,
-            ElapsedTime = DateTime.UtcNow - x.FireTimeUtc
+            ElapsedTime = DateTime.UtcNow - x.FireTimeUtc,
+            CancellationRequested = x.CancellationToken.IsCancellationRequested
         }));
     }
 
@@ -58,6 +46,23 @@ public class SqlTestEndpoints : IEndpoints
 
         //await scheduler.TriggerJob(ShortJob.JobKey, cancellationToken);
         return Results.Ok("Short Running Triggered");
+    }
+
+    internal static async Task<IResult> StopShortRunningProcedure([FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
+    {
+        var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
+        var runningJobs = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
+        var job = runningJobs.FirstOrDefault(x => x.JobDetail.Key.Name == ShortJob.JobKey.Name);
+        if (job != null)
+        {
+            var jobToken = job.CancellationToken;
+            if (jobToken.CanBeCanceled)
+            {
+                var result = await scheduler.Interrupt(job.JobDetail.Key, job.CancellationToken);
+                return (result) ? Results.Ok("Short Running Job Canceled") : Results.BadRequest("Short Running Job Could Not Be Canceled");
+            }
+        }
+        return Results.BadRequest("No Short Running Job Found Running");
     }
 
     internal static async Task<IResult> ExecuteMediumRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
