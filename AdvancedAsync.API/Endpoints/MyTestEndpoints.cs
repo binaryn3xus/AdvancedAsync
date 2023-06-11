@@ -11,7 +11,9 @@ public class SqlTestEndpoints : IEndpoints
         app.MapGet("api/short", ExecuteShortRunningProcedure).WithName("ExecuteShortRunningProcedure").WithOpenApi();
         app.MapGet("api/short/stop", StopShortRunningProcedure).WithName("CancelShortRunningProcedure").WithOpenApi();
         app.MapGet("api/medium", ExecuteMediumRunningProcedure).WithName("ExecuteMediumRunningProcedure").WithOpenApi();
+        app.MapGet("api/medium/stop", StopMediumRunningProcedure).WithName("CancelMediumRunningProcedure").WithOpenApi();
         app.MapGet("api/long", ExecuteLongRunningProcedure).WithName("ExecuteLongRunningProcedure").WithOpenApi();
+        app.MapGet("api/long/stop", StopLongRunningProcedure).WithName("CancelLongRunningProcedure").WithOpenApi();
     }
 
     internal static IResult Ping(CancellationToken cancellationToken = default)
@@ -52,17 +54,18 @@ public class SqlTestEndpoints : IEndpoints
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
         var runningJobs = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
-        var job = runningJobs.FirstOrDefault(x => x.JobDetail.Key.Name == ShortJob.JobKey.Name);
+        var jobKey = ShortJob.JobKey.Name;
+        var job = runningJobs.FirstOrDefault(x => x.JobDetail.Key.Name == jobKey);
         if (job != null)
         {
             var jobToken = job.CancellationToken;
             if (jobToken.CanBeCanceled)
             {
-                var result = await scheduler.Interrupt(job.JobDetail.Key, job.CancellationToken);
-                return (result) ? Results.Ok("Short Running Job Canceled") : Results.BadRequest("Short Running Job Could Not Be Canceled");
+                var result = await scheduler.Interrupt(jobKey, job.CancellationToken);
+                return result ? Results.Ok($"{jobKey} Job Canceled") : Results.BadRequest($"{jobKey} Job Could Not Be Canceled");
             }
         }
-        return Results.BadRequest("No Short Running Job Found Running");
+        return Results.BadRequest($"No {jobKey} Job Found Running");
     }
 
     internal static async Task<IResult> ExecuteMediumRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
@@ -71,11 +74,47 @@ public class SqlTestEndpoints : IEndpoints
         await scheduler.TriggerJob(MediumJob.JobKey, cancellationToken);
         return Results.Ok("Medium Running Triggered");
     }
+    
+    internal static async Task<IResult> StopMediumRunningProcedure([FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
+    {
+        var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
+        var runningJobs = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
+        var jobKey = MediumJob.JobKey.Name;
+        var job = runningJobs.FirstOrDefault(x => x.JobDetail.Key.Name == jobKey);
+        if (job != null)
+        {
+            var jobToken = job.CancellationToken;
+            if (jobToken.CanBeCanceled)
+            {
+                var result = await scheduler.Interrupt(jobKey, job.CancellationToken);
+                return result ? Results.Ok($"{jobKey} Job Canceled") : Results.BadRequest($"{jobKey} Job Could Not Be Canceled");
+            }
+        }
+        return Results.BadRequest($"No {jobKey} Job Found Running");
+    }
 
     internal static async Task<IResult> ExecuteLongRunningProcedure([FromServices] ISqlDataAccess sqlDataAccess, [FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
     {
         var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
         await scheduler.TriggerJob(LongJob.JobKey, cancellationToken);
         return Results.Ok("Long Running Triggered");
+    }
+    
+    internal static async Task<IResult> StopLongRunningProcedure([FromServices] ISchedulerFactory schedulerFactory, CancellationToken cancellationToken = default)
+    {
+        var scheduler = await schedulerFactory.GetScheduler(cancellationToken);
+        var runningJobs = await scheduler.GetCurrentlyExecutingJobs(cancellationToken);
+        var jobKey = LongJob.JobKey.Name;
+        var job = runningJobs.FirstOrDefault(x => x.JobDetail.Key.Name == jobKey);
+        if (job != null)
+        {
+            var jobToken = job.CancellationToken;
+            if (jobToken.CanBeCanceled)
+            {
+                var result = await scheduler.Interrupt(jobKey, job.CancellationToken);
+                return result ? Results.Ok($"{jobKey} Job Canceled") : Results.BadRequest($"{jobKey} Job Could Not Be Canceled");
+            }
+        }
+        return Results.BadRequest($"No {jobKey} Job Found Running");
     }
 }

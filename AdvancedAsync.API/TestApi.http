@@ -20,4 +20,12 @@ GET https://localhost:32774/api/medium
 
 ###
 
+GET https://localhost:32774/api/medium/stop
+
+###
+
 GET https://localhost:32774/api/long
+
+###
+
+GET https://localhost:32774/api/long/stop
